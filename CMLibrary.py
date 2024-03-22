@@ -1,12 +1,20 @@
-import math 
+import math
 
 CLOCKWISE = 0
 ANTI_CLOCKWISE = 1
 
-class Vector:
+class DataStructure:
+    """ Parent Class - Vector & Matrix have some similarities such as how two vecs or two
+     mats are multiplied together or subtracted, added etc """
+    def __init__(self, values):
+        self.__values = values # TODO: Put similar functions from Matrix & Vector here and use parent class
+
+
+
+class Vector():
     def __init__(self, values):
         self.__values = values
-    
+        
     def __str__(self):
         ret = ""
         for row in self.__values:
@@ -16,21 +24,26 @@ class Vector:
     def get_values(self):
         return self.__values
 
-    def multiply_by_matrix(self, matrix, change_state=True):
+    def multiply_by(self, other, change_state=True):
         new_vec = []
-        if isinstance(matrix, Matrix):
+        
+        if isinstance(other, Matrix):
             for row_index in range(len(self.__values)):
-                mat_columns = matrix.get_values()[row_index]
+                mat_columns = other.get_values()[row_index]
                 result = sum( [mat_val*self.__values[i] for i, mat_val in enumerate(mat_columns)] )
                 new_vec.append(result)
-
-            if change_state:
-                self.__values = new_vec
-            else:
-                return Matrix(new_vec)
+        elif isinstance(other, Vector):
+            for index, val in enumerate(self.__values):
+                new_vec.append(val * other.get_values()[index])
         else:
-            print("Must have a matrix")
+            print("Not vector or matrix?")
+            return None
 
+        if change_state:
+            self.__values = new_vec
+        else:
+            return new_vec    
+        
     def multiply_by_scalar(self, scalar, change_state=True):
         new_vec = []
         for val in self.__values:
@@ -41,9 +54,23 @@ class Vector:
         else:
             return new_vec
 
-    
+    def angle(self, other):
+        if isinstance(other, Vector):
+            a_magnitude = self.get_magnitude()
+            b_magnitude = other.get_magnitude()
+            # Multiply vectors
 
-    def rotate(self, direction, angle, change_state=True):
+    def rotate_clockwise(self, angle, change_state=True):
+        ret = self.__rotate(angle, CLOCKWISE)
+        if not change_state:
+            return ret
+
+    def rotate_anticlockwise(self, angle, change_state=True):
+        ret = self.__rotate(angle, ANTI_CLOCKWISE)
+        if not change_state:
+            return ret
+
+    def __rotate(self, angle, direction, change_state=True):
         rotation_matrix = None
         angle = degree_to_radian(angle)
         if direction == CLOCKWISE:
@@ -52,6 +79,7 @@ class Vector:
                 [-math.sin(angle), math.cos(angle)]
             ])
         elif direction == ANTI_CLOCKWISE:
+            # Anti Clockwise
             rotation_matrix = Matrix([
                 [math.cos(angle), -math.sin(angle)],
                 [math.sin(angle), math.cos(angle)]
@@ -61,14 +89,13 @@ class Vector:
             return
 
         if change_state:
-            self.multiply_by_matrix(rotation_matrix)
+            self.multiply_by(rotation_matrix)
         else:
-            return self.multiply_by_matrix(rotation_matrix, change_state=change_state)
+            return self.multiply_by(rotation_matrix, change_state=change_state)
 
     def get_magnitude(self):
         """ Pythagorean theorem """
         return math.sqrt( sum( [(val*val) for val in self.__values] ) )
-
 
     def reflect_x_axis(self):
         if len(self.__values) == 2:
@@ -84,27 +111,32 @@ class Vector:
             self.__values = [-self.__values[1], -self.__values[0]]
 
     def __mul__(self, other):
-        if isinstance(other, Matrix):
-            return Vector(self.multiply_by_matrix(other, change_state=False))
+        if isinstance(other, (Vector, Matrix)):
+            return Vector(self.multiply_by(other, change_state=False))
         elif isinstance(other, (float, int)):
             return Vector(self.multiply_by_scalar(other, change_state=False))
 
 
 
 
-class Matrix:
+class Matrix():
     def __init__(self, values):
         self.__values = values
-        self.__size = len(values)
+     
 
     def __str__(self):
         ret = f"{len(self.__values)}x{1 if isinstance(self.__values[0], (int, float)) else len(self.__values[0]) }:\n" # NOTE: Fix sizing issue/inconsistency (error if calling len(self.__values[0]) with matrices that are size n by 1)
         for row in self.__values:
-            ret += "| " + str(row).strip("[").strip("]").replace(".0", "") + " | \n"
+            ret += "| " + (str(row).strip("[").strip("]") + " | \n")
         return ret
     
     def get_values(self):
         return self.__values
+
+    def get_size(self):
+        """ Col x Row """
+        return [ len(self.__values), len(self.__values[0]) ]
+
 
     def transpose(self, change_state=True):
         values_t = []
@@ -139,11 +171,11 @@ class Matrix:
         elif scalar:
             self.__sequentially_update_components_scalar(lambda a, s: a * s, scalar)
     
-    def invert(self):
+    def invert(self, change_state=True):
         """ Set matrix to its inversed value """
         # |self| = det(self)
-        # [a, b] -> [d, -b] -> (1 / |self|) * [d, -b] = [|self|d, |self|-b]
-        # [c, d] -> [-c, a] ->                [-c, a]   [|self|-c, |self|a]
+        # [a, b] -> [d, -b] -> (1 / |self|) * [d, -b]
+        # [c, d] -> [-c, a] ->                [-c, a]
         
         # Simple 2D invert for now
         distrubutive_val = 1 / self.get_determinant()
@@ -151,12 +183,14 @@ class Matrix:
             [distrubutive_val * self.__values[1][1], distrubutive_val * -self.__values[0][1]],
             [distrubutive_val * -self.__values[1][0], distrubutive_val * self.__values[0][0]]
             ]
-        self.__values = new_mat
-
+        if change_state:
+            self.__values = new_mat
+        else:
+            return Matrix(new_mat)
 
     def get_determinant(self) -> int:
         """ Must be a square matrix """
-        if self.__is_square():
+        if self.is_square():
             if len(self.__values[0]) % 2 != 0:
                 # Using sarrus rule for 3D Matrices (Uneven)
                 # for i in range(2):
@@ -180,7 +214,7 @@ class Matrix:
             print("Must be a square Matrix to calculate determinant!")
     
     def get_eigenvalues(self) -> int:
-        pass
+        pass # Complete
 
     def __determinant_recursive(self, traverse_method, col_index, row_index=0, counter=0):
         """ Returns product of values across diagonal axis for each column - (Following the Sarrus example) """
@@ -189,7 +223,6 @@ class Matrix:
         
         # col_index % len(values) will allow for the overflow values which are required with sarrus rule
         return self.__values[row_index][col_index % len(self.__values[0])] * self.__determinant_recursive(traverse_method, col_index+1, traverse_method(row_index), counter=counter+1)
-
 
     def __dot_product(self, other, change_state=True):
         # Makes computation simpler when B transpose (Personally I found this to be the case)
@@ -226,9 +259,9 @@ class Matrix:
         """ Called inside class for addition & subtraction like behaviour """
         new_matrix = []
 
-        for row in range(self.__size):
+        for row in range(self.get_size()):
             columns = []
-            for col in range(self.__size):
+            for col in range(self.get_size()):
                 columns.append(method(self.__values[row][col], other_matrix.get_values()[row][col]))
             new_matrix.append(columns)
         if change_state:
@@ -240,9 +273,9 @@ class Matrix:
         """ Called inside class for addition & subtraction like behaviour """
         new_matrix = []
 
-        for row in range(self.__size):
+        for row in range(self.get_size()):
             columns = []
-            for col in range(self.__size):
+            for col in range(self.get_size()):
                 columns.append(method(self.__values[row][col], scalar))
             new_matrix.append(columns)
  
@@ -250,7 +283,6 @@ class Matrix:
             self.__values = new_matrix
         else:
             return new_matrix
-
 
     def __eq__(self, other) -> bool:
         if isinstance(other, Matrix):
@@ -270,8 +302,7 @@ class Matrix:
     def __sub__(self, other):
         return Matrix(self.__sequentially_update_components(lambda a, b: a - b, other, change_state=False))
 
-
-    def __is_square(self) -> bool:
+    def is_square(self) -> bool:
         """ Determines if matrix is equal in rows & columns e.g. 2x2 """
         return len(self.__values) == len(self.__values[0])
 
