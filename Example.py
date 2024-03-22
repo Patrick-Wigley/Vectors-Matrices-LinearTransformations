@@ -67,6 +67,18 @@ print("m =", A + B.transpose(change_state=False)) # NOTE change_state changes in
 print("m = ", B * D.invert(change_state=False))
 
 
+# Vector Check
+v1 = Vector([
+    1,
+    5
+])
+v2 = Vector([
+    3,
+    -6
+])
+print("θ of v1 & v2 (angle) =", v1.get_angle(v2))
+
+
 # Vector Manipulation
 point = Vector([
     -1,

@@ -54,11 +54,12 @@ class Vector():
         else:
             return new_vec
 
-    def angle(self, other):
+    def get_angle(self, other):
         if isinstance(other, Vector):
             a_magnitude = self.get_magnitude()
             b_magnitude = other.get_magnitude()
-            # Multiply vectors
+            return (self * other) / (a_magnitude * b_magnitude)  
+            
 
     def rotate_clockwise(self, angle, change_state=True):
         ret = self.__rotate(angle, CLOCKWISE)
@@ -259,9 +260,9 @@ class Matrix():
         """ Called inside class for addition & subtraction like behaviour """
         new_matrix = []
 
-        for row in range(self.get_size()):
+        for row in range(self.get_size()[0]):
             columns = []
-            for col in range(self.get_size()):
+            for col in range(self.get_size()[0]):
                 columns.append(method(self.__values[row][col], other_matrix.get_values()[row][col]))
             new_matrix.append(columns)
         if change_state:
@@ -273,9 +274,9 @@ class Matrix():
         """ Called inside class for addition & subtraction like behaviour """
         new_matrix = []
 
-        for row in range(self.get_size()):
+        for row in range(self.get_size()[0]):
             columns = []
-            for col in range(self.get_size()):
+            for col in range(self.get_size()[0]):
                 columns.append(method(self.__values[row][col], scalar))
             new_matrix.append(columns)
  
